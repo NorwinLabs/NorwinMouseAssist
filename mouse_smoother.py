@@ -6,7 +6,7 @@ import threading
 import time
 from collections import deque
 from pynput import mouse
-from pynput.mouse import Controller, Button
+from pynput.mouse import Controller
 import numpy as np
 
 

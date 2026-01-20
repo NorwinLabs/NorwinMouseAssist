@@ -8,7 +8,7 @@ from mouse_smoother import MouseSmoother
 def test_smoother_init():
     """Test that MouseSmoother can be initialized."""
     smoother = MouseSmoother()
-    assert smoother.enabled == False
+    assert not smoother.enabled
     assert smoother.smoothing_window == 5
     assert smoother.max_velocity == 50
     assert smoother.jitter_threshold == 3
@@ -35,12 +35,12 @@ def test_smoother_start_stop():
     
     # Test start
     smoother.start()
-    assert smoother.enabled == True
+    assert smoother.enabled
     time.sleep(0.5)  # Let it run briefly
     
     # Test stop
     smoother.stop()
-    assert smoother.enabled == False
+    assert not smoother.enabled
     print("✓ Start/stop test passed")
 
 

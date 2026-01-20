@@ -4,7 +4,6 @@ Helps people with Parkinson's or tremors use a computer by smoothing mouse movem
 """
 import tkinter as tk
 from tkinter import ttk, messagebox
-import sys
 from mouse_smoother import MouseSmoother
 
 
