@@ -7,6 +7,7 @@ An open-source software that can help people with non-steady hands, particularly
 - **Mouse Movement Smoothing**: Removes jitter and stutters from mouse movements using an advanced filtering algorithm
 - **Rapid Movement Dampening**: Limits excessive speed to prevent overshooting targets
 - **Jitter Filtering**: Filters out small tremors that don't represent intentional movements
+- **Tremor Calibration**: A 15-second calibration (Calibration menu) detects your tremor's frequency and size, then cancels exactly that shake from your mouse input with notch and low-pass filters
 - **Easy-to-Use GUI**: Simple interface with on/off toggle and adjustable settings
 - **Real-Time Adjustment**: All settings can be changed while the application is running
 
@@ -48,6 +49,16 @@ python main.py
 - **Jitter Filter** (1-10): Filters out small unintentional movements
   - Lower values: More responsive to small movements
   - Higher values: Filters out more tremors
+
+### Menu and Tremor Calibration
+
+- **Calibration → Run Calibration...** (Ctrl+K): Rest your hand on the mouse for 15 seconds. The app finds the dominant tremor frequency (3-12 Hz) and its size in pixels, and saves it to `~/.norwinmouseassist/profile.json`.
+- **Calibration → Use Tremor Cancellation**: Switches between your calibrated filter and the general smoothing below.
+- **Strength** (1-10): Higher removes more tremor but adds cursor lag.
+- **Calibration → View Calibration Results / Reset Calibration**: Inspect or delete the saved profile.
+- **File → Enable / Disable Smoothing** (Ctrl+E)
+
+When calibrated, input is passed through a notch filter at your tremor frequency (and its second harmonic) plus a low-pass filter just below it. Slow, deliberate movement passes through; the rhythmic shake does not. Recalibrate if your tremor changes (e.g. medication timing).
 
 ### Tips
 
