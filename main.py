@@ -9,6 +9,17 @@ from tremor import TremorProfile, analyze_tremor
 
 CALIBRATION_SECONDS = 15
 
+# Dark theme palette
+FONT = "Segoe UI"
+BG = "#14171c"
+CARD = "#1d2229"
+BORDER = "#2a313b"
+TEXT = "#e8ecf1"
+MUTED = "#8b95a3"
+GREEN = "#2ecc71"
+RED = "#e5484d"
+ACCENT = "#4c8dff"
+
 
 class CalibrationDialog:
     """
@@ -201,220 +212,132 @@ class MouseAssistApp:
 
     def _create_widgets(self):
         """Create and layout all UI widgets."""
-        
-        # Title
-        title_label = tk.Label(
-            self.root,
-            text="NorwinMouseAssist",
-            font=("Arial", 18, "bold"),
-            pady=10
-        )
-        title_label.pack()
-        
-        subtitle_label = tk.Label(
-            self.root,
-            text="Mouse Smoothing for Steady Control",
-            font=("Arial", 10),
-            fg="gray"
-        )
-        subtitle_label.pack()
-        
-        # Status Frame
-        status_frame = tk.LabelFrame(
-            self.root,
-            text="Status",
-            font=("Arial", 11, "bold"),
-            padx=20,
-            pady=15
-        )
-        status_frame.pack(padx=20, pady=15, fill="x")
-        
-        self.status_label = tk.Label(
-            status_frame,
-            text="● Disabled",
-            font=("Arial", 12),
-            fg="red"
-        )
+        self.root.configure(bg=BG)
+
+        # Header
+        header = tk.Frame(self.root, bg=BG)
+        header.pack(fill="x", padx=24, pady=(20, 6))
+        tk.Label(header, text="NorwinMouseAssist", bg=BG, fg=TEXT,
+                 font=(FONT, 20, "bold")).pack(anchor="w")
+        tk.Label(header, text="Steadier mouse control for hand tremors",
+                 bg=BG, fg=MUTED, font=(FONT, 10)).pack(anchor="w")
+
+        # Big on/off card
+        power = self._card(self.root)
+        self.toggle_canvas = tk.Canvas(power, width=240, height=84, bg=CARD,
+                                       highlightthickness=0, cursor="hand2")
+        self.toggle_canvas.pack(pady=(4, 8))
+        self.toggle_canvas.bind("<Button-1>", lambda e: self._toggle_smoothing())
+        self.status_label = tk.Label(power, bg=CARD, font=(FONT, 12, "bold"))
         self.status_label.pack()
-        
-        # Control Button
-        self.toggle_button = tk.Button(
-            self.root,
-            text="Enable Smoothing",
-            font=("Arial", 12, "bold"),
-            bg="#4CAF50",
-            fg="white",
-            activebackground="#45a049",
-            pady=10,
-            command=self._toggle_smoothing
-        )
-        self.toggle_button.pack(padx=20, pady=10, fill="x")
-        
-        # Tremor Cancellation Frame
-        tremor_frame = tk.LabelFrame(
-            self.root,
-            text="Tremor Cancellation",
-            font=("Arial", 11, "bold"),
-            padx=20,
-            pady=10
-        )
-        tremor_frame.pack(padx=20, pady=5, fill="x")
+        tk.Label(power, text="Click the switch or press Ctrl+E", bg=CARD,
+                 fg=MUTED, font=(FONT, 9)).pack(pady=(2, 4))
+        self._render_toggle()
 
-        self.calib_label = tk.Label(tremor_frame, font=("Arial", 10),
-                                    justify="left", wraplength=340)
-        self.calib_label.grid(row=0, column=0, columnspan=2, sticky="w")
+        # Tremor cancellation card
+        tremor = self._card(self.root, "Tremor Cancellation")
+        self.calib_label = tk.Label(tremor, bg=CARD, font=(FONT, 10),
+                                    justify="left", wraplength=340, anchor="w")
+        self.calib_label.pack(fill="x")
 
-        tk.Button(
-            tremor_frame,
-            text="Calibrate...",
-            font=("Arial", 10),
-            command=self._run_calibration
-        ).grid(row=1, column=0, sticky="w", pady=6)
-
+        row = tk.Frame(tremor, bg=CARD)
+        row.pack(fill="x", pady=8)
+        tk.Button(row, text="Calibrate…", command=self._run_calibration,
+                  bg=ACCENT, fg="white", activebackground="#6aa0ff",
+                  activeforeground="white", relief="flat", bd=0,
+                  font=(FONT, 10, "bold"), padx=14, pady=5,
+                  cursor="hand2").pack(side="left")
         self.use_tremor_check = tk.Checkbutton(
-            tremor_frame,
-            text="Use tremor cancellation",
-            variable=self.use_tremor_var,
-            command=self._on_use_tremor_toggled
-        )
-        self.use_tremor_check.grid(row=1, column=1, sticky="e", padx=10)
+            row, text="Use tremor cancellation", variable=self.use_tremor_var,
+            command=self._on_use_tremor_toggled, bg=CARD, fg=TEXT,
+            selectcolor=BG, activebackground=CARD, activeforeground=TEXT,
+            disabledforeground=MUTED, font=(FONT, 10))
+        self.use_tremor_check.pack(side="right")
 
-        tk.Label(tremor_frame, text="Strength:", font=("Arial", 10)).grid(
-            row=2, column=0, sticky="w")
         self.tremor_strength_var = tk.IntVar(value=5)
-        self.tremor_strength_scale = tk.Scale(
-            tremor_frame,
-            from_=1,
-            to=10,
-            orient="horizontal",
-            variable=self.tremor_strength_var,
-            command=self._update_settings,
-            length=200
-        )
-        self.tremor_strength_scale.grid(row=2, column=1, padx=10)
-        tk.Label(
-            tremor_frame,
-            text="(Higher = removes more tremor, more lag)",
-            font=("Arial", 8),
-            fg="gray"
-        ).grid(row=3, column=1, sticky="w", padx=10)
+        self.tremor_strength_scale = self._slider(
+            tremor, "Strength", self.tremor_strength_var, 1, 10,
+            "Higher removes more tremor, adds lag")
 
-        # Settings Frame
-        settings_frame = tk.LabelFrame(
-            self.root,
-            text="General Smoothing (used when tremor cancellation is off)",
-            font=("Arial", 11, "bold"),
-            padx=20,
-            pady=15
-        )
-        settings_frame.pack(padx=20, pady=10, fill="both", expand=True)
-        
-        # Smoothing Level
-        smoothing_label = tk.Label(
-            settings_frame,
-            text="Smoothing Level:",
-            font=("Arial", 10)
-        )
-        smoothing_label.grid(row=0, column=0, sticky="w", pady=5)
-        
+        # General smoothing card
+        general = self._card(self.root, "General Smoothing")
         self.smoothing_var = tk.IntVar(value=5)
-        smoothing_scale = tk.Scale(
-            settings_frame,
-            from_=2,
-            to=10,
-            orient="horizontal",
-            variable=self.smoothing_var,
-            command=self._update_settings,
-            length=200
-        )
-        smoothing_scale.grid(row=0, column=1, pady=5, padx=10)
-        
-        smoothing_info = tk.Label(
-            settings_frame,
-            text="(Higher = smoother, more lag)",
-            font=("Arial", 8),
-            fg="gray"
-        )
-        smoothing_info.grid(row=1, column=1, sticky="w", padx=10)
-        
-        # Max Speed
-        speed_label = tk.Label(
-            settings_frame,
-            text="Max Speed:",
-            font=("Arial", 10)
-        )
-        speed_label.grid(row=2, column=0, sticky="w", pady=5)
-        
+        self._slider(general, "Smoothing Level", self.smoothing_var, 2, 10,
+                     "Higher is smoother, with more lag")
         self.speed_var = tk.IntVar(value=50)
-        speed_scale = tk.Scale(
-            settings_frame,
-            from_=20,
-            to=100,
-            orient="horizontal",
-            variable=self.speed_var,
-            command=self._update_settings,
-            length=200
-        )
-        speed_scale.grid(row=2, column=1, pady=5, padx=10)
-        
-        speed_info = tk.Label(
-            settings_frame,
-            text="(Limits rapid movements)",
-            font=("Arial", 8),
-            fg="gray"
-        )
-        speed_info.grid(row=3, column=1, sticky="w", padx=10)
-        
-        # Jitter Filter
-        jitter_label = tk.Label(
-            settings_frame,
-            text="Jitter Filter:",
-            font=("Arial", 10)
-        )
-        jitter_label.grid(row=4, column=0, sticky="w", pady=5)
-        
+        self._slider(general, "Max Speed", self.speed_var, 20, 100,
+                     "Limits rapid movements")
         self.jitter_var = tk.IntVar(value=3)
-        jitter_scale = tk.Scale(
-            settings_frame,
-            from_=1,
-            to=10,
-            orient="horizontal",
-            variable=self.jitter_var,
-            command=self._update_settings,
-            length=200
-        )
-        jitter_scale.grid(row=4, column=1, pady=5, padx=10)
-        
-        jitter_info = tk.Label(
-            settings_frame,
-            text="(Filters small tremors)",
-            font=("Arial", 8),
-            fg="gray"
-        )
-        jitter_info.grid(row=5, column=1, sticky="w", padx=10)
-        
-        # Info text
-        info_text = tk.Label(
-            self.root,
-            text="Adjust settings to your comfort level.\nChanges apply immediately.",
-            font=("Arial", 9),
-            fg="gray",
-            pady=10
-        )
-        info_text.pack()
-        
+        self._slider(general, "Jitter Filter", self.jitter_var, 1, 10,
+                     "Filters small shakes")
+
+        tk.Label(self.root, text="Changes apply immediately. Used when tremor "
+                 "cancellation is off.", bg=BG, fg=MUTED,
+                 font=(FONT, 9)).pack(pady=(4, 16))
+
+    # --- widget helpers ----------------------------------------------------
+
+    def _card(self, parent, title=None):
+        """A rounded-looking dark panel; returns the frame to fill."""
+        outer = tk.Frame(parent, bg=CARD, highlightbackground=BORDER,
+                         highlightthickness=1)
+        outer.pack(fill="x", padx=24, pady=8)
+        inner = tk.Frame(outer, bg=CARD)
+        inner.pack(fill="x", padx=18, pady=14)
+        if title:
+            tk.Label(inner, text=title, bg=CARD, fg=TEXT,
+                     font=(FONT, 11, "bold")).pack(anchor="w", pady=(0, 6))
+        return inner
+
+    def _slider(self, parent, label, var, low, high, hint):
+        frame = tk.Frame(parent, bg=CARD)
+        frame.pack(fill="x", pady=(4, 2))
+        top = tk.Frame(frame, bg=CARD)
+        top.pack(fill="x")
+        tk.Label(top, text=label, bg=CARD, fg=TEXT,
+                 font=(FONT, 10)).pack(side="left")
+        tk.Label(top, textvariable=var, bg=CARD, fg=ACCENT,
+                 font=(FONT, 10, "bold")).pack(side="right")
+        scale = tk.Scale(frame, from_=low, to=high, orient="horizontal",
+                         variable=var, command=self._update_settings,
+                         showvalue=False, bg=ACCENT, fg=TEXT, troughcolor=BG,
+                         activebackground="#6aa0ff", highlightthickness=0,
+                         bd=0, sliderrelief="flat", sliderlength=22, width=10)
+        scale.pack(fill="x")
+        tk.Label(frame, text=hint, bg=CARD, fg=MUTED,
+                 font=(FONT, 8)).pack(anchor="w")
+        return scale
+
+    def _render_toggle(self):
+        """Draw the pill switch and status text for the current state."""
+        c = self.toggle_canvas
+        c.delete("all")
+        on = self.is_running
+        w, h, pad = 240, 84, 4
+        color = GREEN if on else "#3a424d"
+        r = (h - 2 * pad) / 2
+        c.create_oval(pad, pad, pad + 2 * r, h - pad, fill=color, outline=color)
+        c.create_oval(w - pad - 2 * r, pad, w - pad, h - pad, fill=color,
+                      outline=color)
+        c.create_rectangle(pad + r, pad, w - pad - r, h - pad, fill=color,
+                           outline=color)
+        knob_x = w - pad - 2 * r if on else pad
+        c.create_oval(knob_x + 6, pad + 6, knob_x + 2 * r - 6, h - pad - 6,
+                      fill="white", outline="")
+        c.create_text(w * (0.32 if on else 0.68), h / 2,
+                      text="ON" if on else "OFF", fill="white",
+                      font=(FONT, 16, "bold"))
+        if on:
+            self.status_label.config(text="● Smoothing is ON", fg=GREEN)
+        else:
+            self.status_label.config(text="● Smoothing is OFF", fg=RED)
+
     def _toggle_smoothing(self):
         """Toggle the mouse smoothing on/off."""
         if not self.is_running:
             try:
                 self.smoother.start()
                 self.is_running = True
-                self.status_label.config(text="● Enabled", fg="green")
-                self.toggle_button.config(
-                    text="Disable Smoothing",
-                    bg="#f44336",
-                    activebackground="#da190b"
-                )
             except Exception as e:
                 messagebox.showerror(
                     "Error",
@@ -424,13 +347,8 @@ class MouseAssistApp:
         else:
             self.smoother.stop()
             self.is_running = False
-            self.status_label.config(text="● Disabled", fg="red")
-            self.toggle_button.config(
-                text="Enable Smoothing",
-                bg="#4CAF50",
-                activebackground="#45a049"
-            )
-            
+        self._render_toggle()
+
     def _update_settings(self, _=None):
         """Update smoother settings when sliders change."""
         self.smoother.update_settings(
@@ -466,13 +384,13 @@ class MouseAssistApp:
         if not has_profile:
             self.calib_label.config(
                 text="Not calibrated. Run calibration so the app can learn "
-                     "your tremor and cancel it out.", fg="gray")
+                     "your tremor and cancel it out.", fg=MUTED)
         else:
             self.calib_label.config(
                 text=f"Calibrated: {self.profile.frequency_hz:.1f} Hz tremor, "
                      f"about {self.profile.amplitude_px:.1f} px"
                      + ("  (active)" if active else "  (off)"),
-                fg="green" if active else "black")
+                fg=GREEN if active else TEXT)
 
     def _on_use_tremor_toggled(self):
         self._update_tremor_ui()

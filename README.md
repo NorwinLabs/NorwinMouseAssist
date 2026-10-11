@@ -30,6 +30,10 @@ cd NorwinMouseAssist
 pip install -r requirements.txt
 ```
 
+### Windows .exe (no Python needed)
+
+Double-click `build_exe.bat` (needs Python installed once) to create `dist\NorwinMouseAssist.exe`, a single file you can pin to the taskbar or copy anywhere. Alternatively, run the **Build Windows exe** workflow on GitHub (Actions tab) and download the artifact.
+
 ## Usage
 
 Run the application:
